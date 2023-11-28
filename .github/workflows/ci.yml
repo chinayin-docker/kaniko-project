@@ -1,0 +1,38 @@
+name: Docker Hub Sync
+on:
+  push:
+    branches:
+      - master
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set variables
+        id: vars
+        run: |
+          echo "repository=${GITHUB_ACTOR}/$(basename ${GITHUB_REPOSITORY})" >> $GITHUB_OUTPUT
+          echo "origin_repo=gcr.io/kaniko-project/executor" >> $GITHUB_OUTPUT
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      - name: Pull and push (executor)
+        run: |
+          docker pull ${{ steps.vars.outputs.origin_repo }}:latest
+          docker tag ${{ steps.vars.outputs.origin_repo }}:latest ${{ steps.vars.outputs.repository }}:executor
+          docker push ${{ steps.vars.outputs.repository }}:executor
+          docker tag ${{ steps.vars.outputs.origin_repo }}:latest ${{ steps.vars.outputs.repository }}:latest
+          docker push ${{ steps.vars.outputs.repository }}:latest
+      - name: Pull and push (executor-slim)
+        run: |
+          docker pull ${{ steps.vars.outputs.origin_repo }}:slim
+          docker tag ${{ steps.vars.outputs.origin_repo }}:slim ${{ steps.vars.outputs.repository }}:slim
+          docker push ${{ steps.vars.outputs.repository }}:slim
+      - name: Pull and push (executor-debug)
+        run: |
+          docker pull ${{ steps.vars.outputs.origin_repo }}:debug
+          docker tag ${{ steps.vars.outputs.origin_repo }}:debug ${{ steps.vars.outputs.repository }}:debug
+          docker push ${{ steps.vars.outputs.repository }}:debug
