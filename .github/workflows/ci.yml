@@ -6,7 +6,7 @@ on:
   schedule:
     - cron: 0 0 * * *
 jobs:
-  build:
+  copy:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -21,8 +21,8 @@ jobs:
           echo "origin_repo=gcr.io/kaniko-project/executor" >> $GITHUB_OUTPUT
       - name: Install Skopeo
         run: |
-          sudo apt update
-          sudo apt install -y skopeo
+          sudo apt-get -y update
+          sudo apt-get -y install skopeo
           skopeo -v
       - name: Skopeo login
         run: |
