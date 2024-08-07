@@ -23,6 +23,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y skopeo
+          skopeo -v
       - name: Skopeo login
         run: |
           skopeo login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_TOKEN }} docker.io
