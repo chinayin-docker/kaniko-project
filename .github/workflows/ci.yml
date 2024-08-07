@@ -21,7 +21,7 @@ jobs:
           echo "origin_repo=gcr.io/kaniko-project/executor" >> $GITHUB_OUTPUT
       - name: Install Skopeo
         run: |
-          brew install update
+          brew install skopeo
           skopeo -v
       - name: Skopeo login
         run: |
