@@ -8,6 +8,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        version: [ 'v1.23.2' ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -16,25 +19,20 @@ jobs:
         run: |
           echo "repository=${GITHUB_ACTOR}/$(basename ${GITHUB_REPOSITORY})" >> $GITHUB_OUTPUT
           echo "origin_repo=gcr.io/kaniko-project/executor" >> $GITHUB_OUTPUT
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_TOKEN }}
-      - name: Pull and push (executor)
+      - name: Install Skopeo
         run: |
-          docker pull ${{ steps.vars.outputs.origin_repo }}:latest
-          docker tag ${{ steps.vars.outputs.origin_repo }}:latest ${{ steps.vars.outputs.repository }}:executor
-          docker push ${{ steps.vars.outputs.repository }}:executor
-          docker tag ${{ steps.vars.outputs.origin_repo }}:latest ${{ steps.vars.outputs.repository }}:latest
-          docker push ${{ steps.vars.outputs.repository }}:latest
-      - name: Pull and push (executor-slim)
+          sudo apt update
+          sudo apt install -y skopeo
+      - name: Skopeo login
         run: |
-          docker pull ${{ steps.vars.outputs.origin_repo }}:slim
-          docker tag ${{ steps.vars.outputs.origin_repo }}:slim ${{ steps.vars.outputs.repository }}:slim
-          docker push ${{ steps.vars.outputs.repository }}:slim
-      - name: Pull and push (executor-debug)
+          skopeo login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_TOKEN }} docker.io
+      - name: Skopeo copy (executor)
         run: |
-          docker pull ${{ steps.vars.outputs.origin_repo }}:debug
-          docker tag ${{ steps.vars.outputs.origin_repo }}:debug ${{ steps.vars.outputs.repository }}:debug
-          docker push ${{ steps.vars.outputs.repository }}:debug
+          skopeo copy --multi-arch all docker://${{ steps.vars.outputs.origin_repo }}:${{ matrix.version }} docker://${{ steps.vars.outputs.repository }}:${{ matrix.version }}
+          skopeo copy --multi-arch all docker://${{ steps.vars.outputs.origin_repo }}:latest docker://${{ steps.vars.outputs.repository }}:latest
+      - name: Skopeo copy (executor-debug)
+        run: |
+          skopeo copy --multi-arch all docker://${{ steps.vars.outputs.origin_repo }}:${{ matrix.version }}-debug docker://${{ steps.vars.outputs.repository }}:${{ matrix.version }}-debug
+      - name: Skopeo copy (executor-slim)
+        run: |
+          skopeo copy --multi-arch all docker://${{ steps.vars.outputs.origin_repo }}:${{ matrix.version }}-slim docker://${{ steps.vars.outputs.repository }}:${{ matrix.version }}-slim
